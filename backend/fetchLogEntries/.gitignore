@@ -1,0 +1,6 @@
+node_modules/
+
+# File Patterns
+*.zip
+
+log-2021.json
