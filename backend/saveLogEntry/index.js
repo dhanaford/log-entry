@@ -3,11 +3,14 @@ exports.handler = async (event, context, callback) => {
 
     let mySql = require('mysql');
 
+    let databasePassword = process.env.rdsPassword;
+    let databaseUser = process.env.rdsUser;
+
     // Connect to database
     let connection = mySql.createConnection({
         host: 'log-entry-1.cwwtcoc9fclh.us-east-1.rds.amazonaws.com',
-        user: 'admin',
-        password: 'test1234',
+        user: databaseUser,
+        password: databasePassword,
         database: 'log-entry'
     });
 
