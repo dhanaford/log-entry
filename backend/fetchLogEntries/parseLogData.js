@@ -2,67 +2,77 @@ const data = require('./log-2021.json');
 const mySql = require('mysql');
 
 const connection = mySql.createConnection({
-	host: 'log-entry-1.cwwtcoc9fclh.us-east-1.rds.amazonaws.com',
-	user: 'admin',
-  	password: 'test1234',
-  	database: 'log-entry'
+    host: 'log-entry-1.cwwtcoc9fclh.us-east-1.rds.amazonaws.com',
+    user: 'admin',
+    password: 'test1234',
+    database: 'log-entry'
 });
-
-// console.log(data);
-
-// console.log(data.GoogleSheetData[1]);
 
 let log = data.GoogleSheetData;
 
-let monthsHeaders = data.GoogleSheetData[0];
-
-let dayOne = data.GoogleSheetData[1];
-
-// console.log('dayOne: ' + dayOne);
-
-
-// dayOne = dayOne.forEach(val => {
-// 	// console.log(val);
-// 	// console.log(val[1]);
-// 	// return {
-// 	// 	day1: val[0],
-// 	// 	day2: val[1]
-// 	// };
-// 	console.log('update: ' + val);
-// });
 
 log = log.map(val => {
-	// console.log(val);
-	let january = val[0];
-	return january;
-	// return {
-	// 	day1: val[0],
-	// 	day2: val[1]
-	// };
-	// console.log('update: ' + val);
+    let month = val[0]; // TODO: Fix harcoded month values
+    return january;
 });
 
-console.log(log);
 
-let sql = 'update time_dimension set event = \'test2\' where db_date = \'2021-10-02\';'
+let dateHolder = [];
+let month = '';
+let event = '';
+let day = '';
+
+log = log.map((val, idx) => {
+
+    day = val.split(':')[0];
+    event = val.split(':')[1];
+    dateHolder.push(day);
+    month = dateHolder[0];
+    month = month.split('T')[0];
+    month = month.split('-');
+
+    if (day.length === 1) {
+      day = 0 + day;
+    }
+
+    if (day.includes('S')) {
+      day = day.replace(/^Sat/, '');
+      day = day.replace(/^Sun/, '');
+      day = day.replace(/\s/g, '');
+    }
+
+    if (day.length === 1) {
+      day = `0${day}`;
+    }
+
+    day = `${month[0]}-${month[1]}-${day}`;
+    console.log(day);
+
+    return [day, event];
+
+});
+
+log.shift();
+
+log = log.forEach(val => {
+    let sql = `update time_dimension set event = \'${val[1]}\' where db_date = \'${val[0]}\';`;
+
+    console.log(sql);
+    insertData(sql);
+})
 
 
-function insertData() {
-	return new Promise((resolve, reject) => {
-		connection.connect();
+function insertData(sql) {
+    return new Promise((resolve, reject) => {
 
         connection.query(sql, (error, results) => {
             if (error) {
                 console.log('error inserting data: ' + error);
                 reject(error);
             } else {
-            	resolve(results);
+             resolve(results);
             }
         });
-       	connection.end();
     });
 }
 
-// let results = insertData();
-
-// console.log('results: ' + JSON.stringify(results));
