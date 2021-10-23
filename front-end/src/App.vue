@@ -57,9 +57,10 @@
 
     <div class="md-layout md-gutter md-alignment-center">
       <div class="md-layout-item md-medium-size-95">
+        <span class="md-display-2 calendar-month">{{ currentMonth }}</span>
         <md-table v-model="calendarData" md-card @md-selected="onSelect">
+
           <md-table-toolbar>
-            <h1 class="md-title">{{ currentMonth }}</h1>
           </md-table-toolbar>
           
           <md-table-row @click="showDialog = true" slot="md-table-row" slot-scope="{ item }" :class="getClass(item)" md-selectable="single">
@@ -115,6 +116,8 @@ let today = new Date();
 let currentMonth = today.getMonth() + 1;
 let currentYear = today.getFullYear();
 
+const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
 const uris = {
   api: 'https://0yekpx9bsj.execute-api.us-east-1.amazonaws.com/prod/log-entry',
   weather: 'https://api.weather.gov/gridpoints/BOX/70,76/forecast'
@@ -137,7 +140,7 @@ export default {
   },
   computed: {
     currentMonth() {
-      return today.getMonth() + 1;
+      return this.calendarData.map(val => val.month_name)[0];
     },
     year: {
       get() {
@@ -248,6 +251,10 @@ export default {
 .md-dialog-container {
   transform: none !important;
   width: 700px;
+}
+
+.md-table {
+  margin-top: 1em;
 }
 
 </style>
