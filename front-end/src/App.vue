@@ -2,12 +2,16 @@
   <div id="app">
     <div class="md-layout md-gutter md-alignment-center">
       <div class="md-layout-item md-medium-size-95">
+        <md-dialog-alert
+          :md-active.sync="errorDialog"
+          md-title="Error"
+          :md-content="error" />
         <md-card>
           <md-card-header>
             <span class="md-display-2">{{ today }}</span>
           </md-card-header>
           <md-card-content>
-            {{ foreCast }}
+            {{ foreCast[0].foreCast }}
           </md-card-content>
         </md-card>
         <div class="md-layout md-gutter">
@@ -44,7 +48,7 @@
         </div>
         <md-field>
           <label>Search for anything</label>
-          <md-input @input="getMonth" v-model="searchString" placeholder="Search Log"></md-input>
+          <md-input @input="search" v-model="searchString" placeholder="Search Log"></md-input>
         </md-field>
         <div class="md-layout md-gutter">
           <div class="md-layout-item">
@@ -59,15 +63,10 @@
       <div class="md-layout-item md-medium-size-95">
         <span class="md-display-2 calendar-month">{{ currentMonth }}</span>
         <md-table v-model="calendarData" md-card @md-selected="onSelect">
-
-          <md-table-toolbar>
-          </md-table-toolbar>
-          
           <md-table-row @click="showDialog = true" slot="md-table-row" slot-scope="{ item }" :class="getClass(item)" md-selectable="single">
             <md-table-cell :class="{ 'weekend': item.weekend_flag === 't'}" md-label="Day" md-sort-by="day" md-numeric>{{ item.day }}</md-table-cell>
             <md-table-cell md-label="Day Name" md-sort-by="day_name">{{ item.day_name }}</md-table-cell>
             <md-table-cell md-label="Weather" md-sort-by="weather">{{ item.weather }}</md-table-cell>
-
             <md-table-cell md-label="Event" md-sort-by="event">{{ item.event }}</md-table-cell>
           </md-table-row>
         </md-table>
@@ -75,16 +74,16 @@
     </div>
     <md-dialog :md-active.sync="showDialog">
       <md-field>
-        <label>Weather</label>
+        <label>Selecf Forecast</label>
+        <md-select @md-selected="populateWeather($event)" v-model="selectedForeCast">
+          <md-option v-for="(period, index) in foreCast" :key="index" :value="period.foreCast">{{period.timePeriod}}</md-option>
+        </md-select>
+      </md-field>
+      <md-field>
         <md-input
           v-model="selected.weather"
           placeholder="Weather">
         </md-input>
-        <md-button
-          class="md-primary"
-          @click="populateWeather"
-        >Populate weather
-        </md-button>
       </md-field>
       <md-field>
         <label>Detail</label>
@@ -104,6 +103,8 @@
 
 <script>
 import axios from 'axios';
+import ls from 'local-storage';
+
 // Get coordinates: https://api.weather.gov/points/{latitude},{longitude}
 // Boston 42.360081, -71.058884
 // https://api.weather.gov/points/42.360081,-71.058884
@@ -116,18 +117,26 @@ let today = new Date();
 let currentMonth = today.getMonth() + 1;
 let currentYear = today.getFullYear();
 
-const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const isProd = process.env.NODE_ENV === 'production';
 
 const uris = {
-  api: 'https://0yekpx9bsj.execute-api.us-east-1.amazonaws.com/prod/log-entry',
+  api: `https://0yekpx9bsj.execute-api.us-east-1.amazonaws.com/${isProd ? 'prod' : 'dev'}/log-entry`,
   weather: 'https://api.weather.gov/gridpoints/BOX/70,76/forecast'
 };
+
+const api = axios.create({
+  baseURL: 'https://api.weather.gov/gridpoints/BOX/70,76/forecast',
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
 
 export default {
   name: 'App',
   data() {
     return {
-      foreCast: null,
+      foreCast: [],
       selected: {},
       showDialog: false,
       calendarData: [],
@@ -135,7 +144,11 @@ export default {
       searchString: null,
       selectedMonth: currentMonth,
       selectedYear: currentYear,
-      loading: true
+      loading: true,
+      localStorage: null,
+      error: null,
+      errorDialog: false,
+      selectedForeCast: null
     };
   },
   computed: {
@@ -166,14 +179,25 @@ export default {
   async mounted() {
     await this.getForecast();
     await this.getMonth();
+    await this.getLocalStorageEvents();
     this.loading = false;
   },
   methods: {
     populateWeather() {
-      this.selected.weather = this.foreCast;
+      this.selected.weather = this.selectedForeCast;
     },
     onSelect(item) {
       this.selected = item;
+    },
+    search(event) {
+      if (isProd) {
+        this.searchList(event);
+        if (!event) {
+          this.getMonth();
+        }
+      } else {
+        this.getMonth();
+      }
     },
     save() {
       this.showDialog = false;
@@ -182,37 +206,76 @@ export default {
         weather: this.selected.weather,
         event: this.selected.event
       };
-      let response = axios.post(uris.api, {params: params});
-      if (response) {
+      if (isProd) {
+        // save to local storage
+        let existingEntry = ls.get('log.entry');
+        if (existingEntry === null) existingEntry = [];
+        existingEntry.push(params);
+        ls.set('log.entry', existingEntry);
       } else {
-        console.log('Error loading data');
+        let response = axios.post(uris.api, {params: params});
+        if (response) {
+          console.log('Success: ' + JSON.stringify(response));
+        } else {
+          this.errorDialog = true;
+          this.error = 'Error saving data';
+        }
       }
     },
     getClass: ({ day }) => ({
       'md-primary': day === 2,
       'md-accent': day === 3,
     }),
+    getLocalStorageEvents() {
+      let localStorage = ls.get('log.entry');
+      if (localStorage) {
+        this.localStorage = (ls.get('log.entry'));
+      }
+      if (localStorage) {
+        for (let property of this.calendarData) {
+          for (let property2 of this.localStorage) {
+            if (property.id === property2.id) {
+              property.event = property2.event;
+              property.weather = property2.weather;
+            }
+          }
+        }
+      }  
+    },
+    searchList(event) {
+      this.calendarData = this.calendarData.filter(str =>  (str.event) ? str.event.indexOf(event) !== -1 : str.event);
+    },
     async getMonth() {
       this.loading = true;
       let params = {
         month: this.month,
         year: this.year,
-        searchString: this.searchString,
+        searchString: this.searchString
       };
       let response = await axios.get(uris.api, {params: params});
       if (response && response.data) {
         this.calendarData = response.data.result;
+        if (isProd) {
+          this.getLocalStorageEvents();
+        }
         this.loading = false;
       } else {
-        console.log('Error loading data');
+        this.errorDialog = true;
+        this.error = 'Error loading data';
       }
     },
     async getForecast() {
-      let result = await axios.get(uris.weather);
+      let result = await api.get(uris.weather);
       if (result && result.data) {
-        this.foreCast = result.data.properties.periods[0].detailedForecast;
+        this.foreCast = result.data.properties.periods.map(val => {
+          return {
+            timePeriod: val.name,
+            foreCast: val.detailedForecast
+          };
+        });
       } else {
-        console.log('error loading weather'); //TODO: Implement error messages
+        this.errorDialog = true;
+        this.error = 'Error loading weather forecast';
       }
     }
   }
