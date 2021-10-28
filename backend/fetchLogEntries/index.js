@@ -6,9 +6,16 @@ exports.handler = async (event, context, callback) => {
     let databasePassword = process.env.rdsPassword;
     let databaseUser = process.env.rdsUser;
 
+    const isProd = context.invokedFunctionArn.split(':').pop() === 'PROD';
+
+    console.log('env: ' + context.invokedFunctionArn.split(':').pop());
+    console.log('isProd: ' + isProd);
+
+    console.log('input: ' + JSON.stringify(event));
+
     // Connect to database
     const connection = mySql.createConnection({
-        host: 'log-entry-1.cwwtcoc9fclh.us-east-1.rds.amazonaws.com',
+        host: 'log-entry-dev.cwwtcoc9fclh.us-east-1.rds.amazonaws.com',
         user: databaseUser,
         password: databasePassword,
         database: 'log-entry'
@@ -18,7 +25,7 @@ exports.handler = async (event, context, callback) => {
 
     let input = event.queryStringParameters;
 
-    let sqlSelect = 'SELECT * FROM time_dimension';
+    let sqlSelect = `SELECT * FROM ${isProd ? 'time_dimension_prod' : 'time_dimension'}`;
     let values = [];
 
     function generateWhere() {

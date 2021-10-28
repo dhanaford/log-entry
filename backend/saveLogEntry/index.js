@@ -8,7 +8,7 @@ exports.handler = async (event, context, callback) => {
 
     // Connect to database
     let connection = mySql.createConnection({
-        host: 'log-entry-1.cwwtcoc9fclh.us-east-1.rds.amazonaws.com',
+        host: 'log-entry-dev.cwwtcoc9fclh.us-east-1.rds.amazonaws.com',
         user: databaseUser,
         password: databasePassword,
         database: 'log-entry'
