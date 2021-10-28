@@ -191,7 +191,7 @@ export default {
     },
     search(event) {
       if (isProd) {
-        this.searchList(event);
+        this.searchList(event); // Local storage
         if (!event) {
           this.getMonth();
         }
@@ -233,16 +233,17 @@ export default {
       }
       if (localStorage) {
         for (let property of this.calendarData) {
-          for (let property2 of this.localStorage) {
-            if (property.id === property2.id) {
-              property.event = property2.event;
-              property.weather = property2.weather;
+          for (let val of this.localStorage) {
+            if (property.id === val.id) {
+              property.event = val.event;
+              property.weather = val.weather;
             }
           }
         }
       }  
     },
     searchList(event) {
+      // Search for local storage
       this.calendarData = this.calendarData.filter(str =>  (str.event) ? str.event.indexOf(event) !== -1 : str.event);
     },
     async getMonth() {
