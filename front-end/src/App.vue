@@ -10,7 +10,8 @@
           <md-card-header>
             <span class="md-display-2">{{ today }}</span>
           </md-card-header>
-          <md-card-content>
+          <md-card-content
+            v-if="foreCast[0]">
             {{ foreCast[0].foreCast }}
           </md-card-content>
         </md-card>
@@ -63,7 +64,7 @@
       <div class="md-layout-item md-medium-size-95">
         <span class="md-display-2 calendar-month">{{ currentMonth }}</span>
         <md-table v-model="calendarData" md-card @md-selected="onSelect">
-          <md-table-row @click="showDialog = true" slot="md-table-row" slot-scope="{ item }" :class="getClass(item)" md-selectable="single">
+          <md-table-row @click="showDialog = true" slot="md-table-row" slot-scope="{ item }" :class="{ 'today': item.db_date.split('T')[0] === new Date().toISOString().split('T')[0]}" md-selectable="single">
             <md-table-cell :class="{ 'weekend': item.weekend_flag === 't'}" md-label="Day" md-sort-by="day" md-numeric>{{ item.day }}</md-table-cell>
             <md-table-cell md-label="Day Name" md-sort-by="day_name">{{ item.day_name }}</md-table-cell>
             <md-table-cell md-label="Weather" md-sort-by="weather">{{ item.weather }}</md-table-cell>
@@ -105,6 +106,7 @@
 import axios from 'axios';
 import ls from 'local-storage';
 
+/* weather api details */
 // Get coordinates: https://api.weather.gov/points/{latitude},{longitude}
 // Boston 42.360081, -71.058884
 // https://api.weather.gov/points/42.360081,-71.058884
@@ -131,13 +133,15 @@ const api = axios.create({
   }
 });
 
-
 export default {
   name: 'App',
   data() {
     return {
       foreCast: [],
-      selected: {},
+      selected: {
+        weather: null,
+        event: null
+      },
       showDialog: false,
       calendarData: [],
       selectedDate: null,
@@ -187,13 +191,15 @@ export default {
       this.selected.weather = this.selectedForeCast;
     },
     onSelect(item) {
-      this.selected = item;
+      if (item) {
+        this.selected = item;
+      }
     },
     search(event) {
       if (isProd) {
-        this.searchList(event); // Local storage
+        this.searchList(event); // search feature for prod
         if (!event) {
-          this.getMonth();
+          this.getMonth(); // getMonth handles search for dev
         }
       } else {
         this.getMonth();
@@ -222,10 +228,6 @@ export default {
         }
       }
     },
-    getClass: ({ day }) => ({
-      'md-primary': day === 2,
-      'md-accent': day === 3,
-    }),
     getLocalStorageEvents() {
       let localStorage = ls.get('log.entry');
       if (localStorage) {
@@ -242,9 +244,10 @@ export default {
         }
       }  
     },
-    searchList(event) {
-      // Search for local storage
-      this.calendarData = this.calendarData.filter(str =>  (str.event) ? str.event.indexOf(event) !== -1 : str.event);
+    searchList() {
+      this.calendarData = this.calendarData.filter(str => {
+        return (str.event && str.weather) ? str.event.indexOf(this.searchString) !== -1 || str.weather.indexOf(this.searchString) !== -1  : str.event || str.weather;
+      });
     },
     async getMonth() {
       this.loading = true;
@@ -319,6 +322,12 @@ export default {
 
 .md-table {
   margin-top: 1em;
+}
+
+.today {
+  background-color: #616161;
+  border: 2px solid #448aff;
+
 }
 
 </style>

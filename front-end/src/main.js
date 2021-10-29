@@ -14,7 +14,7 @@ import 'vue-material/dist/theme/default-dark.css';
 // Vue.use(MdCard);
 // Vue.use(MdInput);
 Vue.use(VueMaterial);
-Vue.use(axios);
+Vue.prototype.$axios = axios;
 
 Vue.config.productionTip = false;
 
