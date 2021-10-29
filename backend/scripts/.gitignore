@@ -1,0 +1,15 @@
+node_modules/
+
+# File Patterns
+*.zip
+
+log-2021.json
+log-2020.json
+log-2019.json
+log-2018.json
+log-2017.json
+log-2016.json
+log-2015.json
+log-2014.json
+log-2013.json
+log-2012.json

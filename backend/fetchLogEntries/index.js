@@ -9,7 +9,6 @@ exports.handler = async (event, context, callback) => {
     const isProd = context.invokedFunctionArn.split(':').pop() === 'PROD';
 
     console.log('env: ' + context.invokedFunctionArn.split(':').pop());
-    console.log('isProd: ' + isProd);
 
     console.log('input: ' + JSON.stringify(event));
 
@@ -21,12 +20,36 @@ exports.handler = async (event, context, callback) => {
         database: 'log-entry'
     });
 
-    console.log(`input: ${JSON.stringify(event)}`);
-
     let input = event.queryStringParameters;
 
     let sqlSelect = `SELECT * FROM ${isProd ? 'time_dimension_prod' : 'time_dimension'}`;
     let values = [];
+
+    let sqlString = sqlSelect + generateWhere();
+
+    console.log(`sqlString: ${sqlString}`);
+
+
+    let results = await getMonth();
+
+    let responseBody = {
+        result: results
+    };
+
+    let response = {
+        'statusCode': 200,
+        'headers': {
+           'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'PUT, GET, POST, OPTIONS'
+        },
+        
+        'body': JSON.stringify(responseBody),
+        'isBase64Encoded': false
+    };
+    
+    // Return response for UI
+    callback(null, response);
+
 
     function generateWhere() {
         let where = '';
@@ -35,17 +58,13 @@ exports.handler = async (event, context, callback) => {
             where = ' where event like ?';
             values.push(searchString);
         } else {
-            console.log('seachAll else hit');
             where = ' WHERE month = ? AND year = ?';
             values.push(input.month);
             values.push(input.year);
         }
         return where;
     }
-
-    let sqlString = sqlSelect + generateWhere();
-
-    console.log(`sqlString: ${sqlString}`);
+    
 
     async function getMonth() {
 
@@ -63,24 +82,4 @@ exports.handler = async (event, context, callback) => {
             connection.end();
         });
     }
-
-
-    let results = await getMonth();
-
-    let responseBody = {
-        result: results
-    };
-
-    let response = {
-        "statusCode": 200,
-        "headers": {
-           'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'PUT, GET, POST, OPTIONS'
-        },
-        
-        "body": JSON.stringify(responseBody),
-        "isBase64Encoded": false
-    };
-    // Return response for UI
-    callback(null, response);
 };

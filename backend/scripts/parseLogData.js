@@ -13,7 +13,7 @@ let log = data.GoogleSheetData;
 
 log = log.map(val => {
     let month = val[0]; // TODO: Fix harcoded month values
-    return january;
+    return month;
 });
 
 

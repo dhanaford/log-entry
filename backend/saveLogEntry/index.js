@@ -18,6 +18,27 @@ exports.handler = async (event, context, callback) => {
 
     let input = JSON.parse(event.body);
 
+    let results = await saveEntry();
+
+    var responseBody = {
+        result: results
+    };
+
+    const response = {
+        'statusCode': 200,
+        'headers': {
+           'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'PUT, GET, POST, OPTIONS'
+        },
+        
+        'body': JSON.stringify(responseBody),
+        'isBase64Encoded': false
+    };
+    
+    // Return response for UI
+    callback(null, response);
+
+
     async function saveEntry() {
 
         return new Promise((resolve, reject) => {
@@ -42,23 +63,4 @@ exports.handler = async (event, context, callback) => {
 
         });
     }
-
-
-    let results = await saveEntry();
-    var responseBody = {
-        result: results
-    };
-
-    const response = {
-        "statusCode": 200,
-        "headers": {
-           'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'PUT, GET, POST, OPTIONS'
-        },
-        
-        "body": JSON.stringify(responseBody),
-        "isBase64Encoded": false
-    };
-    // Return response for UI
-    callback(null, response);
 };
