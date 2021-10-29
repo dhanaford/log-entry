@@ -1,3 +1,5 @@
+-- Sql used to create time_dimension table. 'time_dimension' is the primary table needed/used to handle data for this app.
+
 use `log-entry`
 DROP TABLE IF EXISTS time_dimension;
 CREATE TABLE time_dimension (
