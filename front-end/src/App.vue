@@ -2,24 +2,33 @@
   <div id="app">
     <div class="md-layout md-gutter md-alignment-center">
       <div class="md-layout-item md-medium-size-95">
+
         <md-dialog-alert
           :md-active.sync="errorDialog"
           md-title="Error"
-          :md-content="error" />
+          :md-content="errorMessage"
+        />
         <md-card>
+
           <md-card-header>
             <span class="md-display-2">{{ today }}</span>
           </md-card-header>
+
           <md-card-content
             v-if="foreCast[0]">
             {{ foreCast[0].foreCast }}
           </md-card-content>
         </md-card>
+
+        <!-- List filters --->
         <div class="md-layout md-gutter">
           <div class="md-layout-item">
             <md-field>
               <label for="year">Year</label>
-              <md-select @md-selected="getMonth($event)" v-model="year">
+              <md-select
+                @md-selected="getMonth($event)"
+                v-model="year"
+              >
                 <md-option value="2022">2023</md-option>
                 <md-option value="2022">2022</md-option>
                 <md-option value="2021">2021</md-option>
@@ -29,8 +38,11 @@
           </div>
           <div class="md-layout-item">
             <md-field>
-              <label for="month">Month</label>
-              <md-select @md-selected="getMonth($event)" v-model="month">
+              <label>Month</label>
+              <md-select
+                @md-selected="getMonth($event)"
+                v-model="month"
+              >
                 <md-option value="01">January</md-option>
                 <md-option value="02">February</md-option>
                 <md-option value="03">March</md-option>
@@ -49,7 +61,11 @@
         </div>
         <md-field>
           <label>Search for anything</label>
-          <md-input @input="search" v-model="searchString" placeholder="Search Log"></md-input>
+          <md-input
+            @input="search"
+            v-model="searchString"
+            placeholder="Search Log"
+          ></md-input>
         </md-field>
         <div class="md-layout md-gutter">
           <div class="md-layout-item">
@@ -63,21 +79,58 @@
     <div class="md-layout md-gutter md-alignment-center">
       <div class="md-layout-item md-medium-size-95">
         <span class="md-display-2 calendar-month">{{ currentMonth }}</span>
-        <md-table v-model="calendarData" md-card @md-selected="onSelect">
-          <md-table-row @click="showDialog = true" slot="md-table-row" slot-scope="{ item }" :class="{ 'today': item.db_date.split('T')[0] === new Date().toISOString().split('T')[0]}" md-selectable="single">
-            <md-table-cell :class="{ 'weekend': item.weekend_flag === 't'}" md-label="Day" md-sort-by="day" md-numeric>{{ item.day }}</md-table-cell>
-            <md-table-cell md-label="Day Name" md-sort-by="day_name">{{ item.day_name }}</md-table-cell>
-            <md-table-cell md-label="Weather" md-sort-by="weather">{{ item.weather }}</md-table-cell>
-            <md-table-cell md-label="Event" md-sort-by="event">{{ item.event }}</md-table-cell>
+        <md-table
+          v-model="calendarData"
+          md-card
+          @md-selected="onSelect"
+        >
+          <md-table-row
+            @click="showDialog = true"
+            slot="md-table-row"
+            slot-scope="{ item }"
+            :class="{ 'today': item.db_date.split('T')[0] === new Date().toISOString().split('T')[0]}"
+            md-selectable="single"
+          >
+            <md-table-cell
+              :class="{ 'weekend': item.weekend_flag === 't'}"
+              md-label="Day"
+              md-sort-by="day"
+              md-numeric
+            >{{ item.day }}
+            </md-table-cell>
+            <md-table-cell
+              md-label="Day Name"
+              md-sort-by="day_name"
+            >{{ item.day_name }}
+            </md-table-cell>
+            <md-table-cell
+              md-label="Weather"
+              md-sort-by="weather"
+            >{{ item.weather }}
+            </md-table-cell>
+            <md-table-cell
+              md-label="Event"
+              md-sort-by="event"
+            >{{ item.event }}
+            </md-table-cell>
           </md-table-row>
         </md-table>
       </div>
     </div>
+
+    <!-- Entry dialog -->
     <md-dialog :md-active.sync="showDialog">
       <md-field>
         <label>Selecf Forecast</label>
-        <md-select @md-selected="populateWeather($event)" v-model="selectedForeCast">
-          <md-option v-for="(period, index) in foreCast" :key="index" :value="period.foreCast">{{period.timePeriod}}</md-option>
+        <md-select
+          @md-selected="populateWeather($event)"
+          v-model="selectedForeCast"
+        >
+          <md-option
+            v-for="(period, index) in foreCast"
+            :key="index" :value="period.foreCast"
+          >{{period.timePeriod}}
+          </md-option>
         </md-select>
       </md-field>
       <md-field>
@@ -95,7 +148,11 @@
         </md-textarea>
       </md-field>
       <md-dialog-actions>
-        <md-button class="md-primary" @click="save">Save</md-button>
+        <md-button
+          class="md-primary"
+          @click="save"
+        >Save
+        </md-button>
       </md-dialog-actions>
     </md-dialog>
 
@@ -138,19 +195,15 @@ export default {
   data() {
     return {
       foreCast: [],
-      selected: {
-        weather: null,
-        event: null
-      },
+      selected: {},
       showDialog: false,
       calendarData: [],
-      selectedDate: null,
       searchString: null,
       selectedMonth: currentMonth,
       selectedYear: currentYear,
       loading: true,
       localStorage: null,
-      error: null,
+      errorMessage: null,
       errorDialog: false,
       selectedForeCast: null
     };
@@ -183,7 +236,7 @@ export default {
   async mounted() {
     await this.getForecast();
     await this.getMonth();
-    await this.getLocalStorageEvents();
+    if (isProd) await this.getLocalStorageEvents();
     this.loading = false;
   },
   methods: {
@@ -199,10 +252,10 @@ export default {
       if (isProd) {
         this.searchList(event); // search feature for prod
         if (!event) {
-          this.getMonth(); // getMonth handles search for dev
+          this.getMonth();
         }
       } else {
-        this.getMonth();
+        this.getMonth(); // getMonth handles search for dev
       }
     },
     save() {
@@ -224,7 +277,7 @@ export default {
           console.log('Success: ' + JSON.stringify(response));
         } else {
           this.errorDialog = true;
-          this.error = 'Error saving data';
+          this.errorMessage = 'Error saving data';
         }
       }
     },
@@ -259,13 +312,11 @@ export default {
       let response = await axios.get(uris.api, {params: params});
       if (response && response.data) {
         this.calendarData = response.data.result;
-        if (isProd) {
-          this.getLocalStorageEvents();
-        }
+        if (isProd) this.getLocalStorageEvents();
         this.loading = false;
       } else {
         this.errorDialog = true;
-        this.error = 'Error loading data';
+        this.errorMessage = 'Error loading data';
       }
     },
     async getForecast() {
@@ -279,7 +330,7 @@ export default {
         });
       } else {
         this.errorDialog = true;
-        this.error = 'Error loading weather forecast';
+        this.errorMessage = 'Error loading weather forecast';
       }
     }
   }
