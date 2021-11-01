@@ -13,7 +13,8 @@
     "local-storage": "^2.0.0",
     "vue": "^2.6.11",
     "vue-axios": "^2.1.5",
-    "vue-material": "^1.0.0-beta-13"
+    "vue-material": "^1.0.0-beta-13",
+    "vue-sessionstorage": "^1.0.0"
   },
   "devDependencies": {
     "@vue/cli-plugin-babel": "^4.3.0",

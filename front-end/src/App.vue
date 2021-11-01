@@ -2,7 +2,7 @@
   <div id="app">
     <div class="md-layout md-gutter md-alignment-center">
       <div class="md-layout-item md-medium-size-95">
-
+        <SplashLogin :md-active.sync="showSplash"></SplashLogin>
         <md-dialog-alert
           :md-active.sync="errorDialog"
           md-title="Error"
@@ -33,6 +33,14 @@
                 <md-option value="2022">2022</md-option>
                 <md-option value="2021">2021</md-option>
                 <md-option value="2020">2020</md-option>
+                <md-option value="2019">2019</md-option>
+                <md-option value="2018">2018</md-option>
+                <md-option value="2017">2017</md-option>
+                <md-option value="2016">2016</md-option>
+                <md-option value="2015">2015</md-option>
+                <md-option value="2014">2014</md-option>
+                <md-option value="2013">2013</md-option>
+                <md-option value="2012">2012</md-option>
               </md-select>
             </md-field>
           </div>
@@ -121,7 +129,7 @@
     <!-- Entry dialog -->
     <md-dialog :md-active.sync="showDialog">
       <md-field>
-        <label>Selecf Forecast</label>
+        <label>Select Forecast</label>
         <md-select
           @md-selected="populateWeather($event)"
           v-model="selectedForeCast"
@@ -155,13 +163,15 @@
         </md-button>
       </md-dialog-actions>
     </md-dialog>
-
+    <Footer></Footer>
   </div>
 </template>
 
 <script>
 import axios from 'axios';
 import ls from 'local-storage';
+import Footer from './components/Footer.vue';
+import SplashLogin from './components/SplashLogin.vue';
 
 /* weather api details */
 // Get coordinates: https://api.weather.gov/points/{latitude},{longitude}
@@ -191,12 +201,17 @@ const api = axios.create({
 });
 
 export default {
+  components: {
+    Footer,
+    SplashLogin
+  },
   name: 'App',
   data() {
     return {
       foreCast: [],
       selected: {},
       showDialog: false,
+      showSplash: true,
       calendarData: [],
       searchString: null,
       selectedMonth: currentMonth,
