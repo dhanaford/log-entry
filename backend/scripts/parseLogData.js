@@ -5,7 +5,7 @@ let databasePassword = process.env.rdsPassword;
 let databaseUser = process.env.rdsUser;
 
 const connection = mySql.createConnection({
-    host: 'log-entry-1.cwwtcoc9fclh.us-east-1.rds.amazonaws.com',
+    host: 'log-entry-dev.cwwtcoc9fclh.us-east-1.rds.amazonaws.com',
     user: databaseUser,
     password: databasePassword,
     database: 'log-entry'
