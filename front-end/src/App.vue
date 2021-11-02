@@ -1,24 +1,24 @@
 <template>
   <div id="app">
+    <ToDo></ToDo>
     <div class="md-layout md-gutter md-alignment-center">
-      <div class="md-layout-item md-medium-size-95">
+      <div class="md-layout-item md-large-size-95 md-xlarge-size-95">
         <SplashLogin :md-active.sync="showSplash"></SplashLogin>
         <md-dialog-alert
           :md-active.sync="errorDialog"
           md-title="Error"
           :md-content="errorMessage"
         />
-        <md-card>
 
-          <md-card-header>
-            <span class="md-display-2">{{ today }}</span>
-          </md-card-header>
+        <md-card-header>
+          <span class="md-display-2">{{ today }}</span>
+        </md-card-header>
 
-          <md-card-content
-            v-if="foreCast[0]">
-            {{ foreCast[0].foreCast }}
-          </md-card-content>
-        </md-card>
+        <md-card-content
+          class="forecast"
+          v-if="foreCast[0]">
+          {{ foreCast[0].foreCast }}
+        </md-card-content>
 
         <!-- List filters --->
         <div class="md-layout md-gutter">
@@ -85,7 +85,7 @@
     <md-progress-spinner v-if="loading" md-mode="indeterminate"></md-progress-spinner>
 
     <div class="md-layout md-gutter md-alignment-center">
-      <div class="md-layout-item md-medium-size-95">
+      <div class="md-layout-item md-large-size-95 md-xlarge-size-95">
         <span class="md-display-2 calendar-month">{{ currentMonth }}</span>
         <md-table
           v-model="calendarData"
@@ -172,6 +172,7 @@ import axios from 'axios';
 import ls from 'local-storage';
 import Footer from './components/Footer.vue';
 import SplashLogin from './components/SplashLogin.vue';
+import ToDo from './components/ToDo.vue';
 
 /* weather api details */
 // Get coordinates: https://api.weather.gov/points/{latitude},{longitude}
@@ -203,7 +204,8 @@ const api = axios.create({
 export default {
   components: {
     Footer,
-    SplashLogin
+    SplashLogin,
+    ToDo
   },
   name: 'App',
   data() {
@@ -359,8 +361,7 @@ export default {
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
-  margin-top: 60px;
-  padding: 0 1em;
+  padding: 0 0em;
 }
 .md-table + .md-table {
    margin-top: 16px
@@ -394,6 +395,10 @@ export default {
   background-color: #616161;
   border: 2px solid #448aff;
 
+}
+
+.forecast {
+  color: white;
 }
 
 </style>
