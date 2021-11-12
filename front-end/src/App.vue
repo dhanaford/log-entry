@@ -1,7 +1,8 @@
 <template>
   <div id="app">
-    <ToDo></ToDo>
-    <div class="md-layout md-gutter md-alignment-center">
+    <Top :reminders="reminders" @clicked="handleNav"></Top>
+    <News v-if="menuSelected === 'news'"></News>
+    <div v-if="menuSelected === 'log'" class="md-layout md-gutter md-alignment-center">
       <div class="md-layout-item md-large-size-95 md-xlarge-size-95">
         <SplashLogin :md-active.sync="showSplash"></SplashLogin>
         <md-dialog-alert
@@ -84,7 +85,7 @@
 
     <md-progress-spinner v-if="loading" md-mode="indeterminate"></md-progress-spinner>
 
-    <div class="md-layout md-gutter md-alignment-center">
+    <div v-if="menuSelected === 'log'" class="md-layout md-gutter md-alignment-center">
       <div class="md-layout-item md-large-size-95 md-xlarge-size-95">
         <span class="md-display-2 calendar-month">{{ currentMonth }}</span>
         <md-table
@@ -96,7 +97,7 @@
             @click="showDialog = true"
             slot="md-table-row"
             slot-scope="{ item }"
-            :class="{ 'today': item.db_date.split('T')[0] === new Date().toISOString().split('T')[0]}"
+            :class="{ 'today': item.db_date.split('T')[0] === currentDateFormatted}"
             md-selectable="single"
           >
             <md-table-cell
@@ -128,6 +129,7 @@
 
     <!-- Entry dialog -->
     <md-dialog :md-active.sync="showDialog">
+      <Reminder :currentDate="currentDateFormatted" :date="selected.db_date"></Reminder>
       <md-field>
         <label>Select Forecast</label>
         <md-select
@@ -172,7 +174,9 @@ import axios from 'axios';
 import ls from 'local-storage';
 import Footer from './components/Footer.vue';
 import SplashLogin from './components/SplashLogin.vue';
-import ToDo from './components/ToDo.vue';
+import Top from './components/Top.vue';
+import Reminder from './components/Reminder.vue';
+import News from './components/News.vue';
 
 /* weather api details */
 // Get coordinates: https://api.weather.gov/points/{latitude},{longitude}
@@ -194,7 +198,7 @@ const uris = {
   weather: 'https://api.weather.gov/gridpoints/BOX/70,76/forecast'
 };
 
-const api = axios.create({
+const weatherApi = axios.create({
   baseURL: 'https://api.weather.gov/gridpoints/BOX/70,76/forecast',
   headers: {
     'Content-Type': 'application/json'
@@ -205,7 +209,9 @@ export default {
   components: {
     Footer,
     SplashLogin,
-    ToDo
+    Top,
+    Reminder,
+    News
   },
   name: 'App',
   data() {
@@ -222,7 +228,10 @@ export default {
       localStorage: null,
       errorMessage: null,
       errorDialog: false,
-      selectedForeCast: null
+      selectedForeCast: null,
+      reminders: [],
+      newsSelected: false,
+      menuSelected: 'log'
     };
   },
   computed: {
@@ -245,6 +254,9 @@ export default {
         this.selectedMonth = val;
       }
     },
+    currentDateFormatted() {
+      return new Date().toISOString().split('T')[0];
+    },
     today() {
       let day = today.toISOString().split('T')[0].split('-');
       return `${day[1]} / ${day[2]} / ${day[0]}`;
@@ -254,9 +266,18 @@ export default {
     await this.getForecast();
     await this.getMonth();
     if (isProd) await this.getLocalStorageEvents();
+    await this.getLocalStorageReminders();
+    // let response = await axios.get(uris.news);
+    // console.log(response.data.articles);
     this.loading = false;
   },
   methods: {
+    async getLocalStorageReminders() {
+      let localStorage = ls.get('log.entry.reminder');
+      if (localStorage) {
+        this.reminders = ls.get('log.entry.reminder');
+      }
+    },
     populateWeather() {
       this.selected.weather = this.selectedForeCast;
     },
@@ -289,12 +310,15 @@ export default {
         existingEntry.push(params);
         ls.set('log.entry', existingEntry);
       } else {
-        let response = axios.post(uris.api, {params: params});
-        if (response) {
-          console.log('Success: ' + JSON.stringify(response));
-        } else {
-          this.errorDialog = true;
-          this.errorMessage = 'Error saving data';
+        try {
+          let response = axios.post(uris.api, {params: params});
+          if (response) {
+          } else {
+            this.errorDialog = true;
+            this.errorMessage = 'Error saving data';
+          }
+        } catch(e) {
+          throw new Error(e);
         }
       }
     },
@@ -319,6 +343,9 @@ export default {
         return (str.event && str.weather) ? str.event.indexOf(this.searchString) !== -1 || str.weather.indexOf(this.searchString) !== -1  : str.event || str.weather;
       });
     },
+    handleNav(evt) {
+      this.menuSelected = evt;
+    },
     async getMonth() {
       this.loading = true;
       let params = {
@@ -337,17 +364,22 @@ export default {
       }
     },
     async getForecast() {
-      let result = await api.get(uris.weather);
-      if (result && result.data) {
-        this.foreCast = result.data.properties.periods.map(val => {
-          return {
-            timePeriod: val.name,
-            foreCast: val.detailedForecast
-          };
-        });
-      } else {
-        this.errorDialog = true;
-        this.errorMessage = 'Error loading weather forecast';
+      try {
+        let result = await weatherApi.get(uris.weather);
+        if (result && result.data) {
+          this.foreCast = result.data.properties.periods.map(val => {
+            return {
+              timePeriod: val.name,
+              foreCast: val.detailedForecast
+            };
+          });
+        } else {
+          this.errorDialog = true;
+          this.errorMessage = 'Error loading weather forecast';
+        }
+      } catch(e) {
+        console.log(e);
+        throw new Error(e);
       }
     }
   }
@@ -375,30 +407,44 @@ export default {
 .weekend {
   background-color:grey;
 }
+.md-dialog {
+  z-index: 9 !important;
+}
 .md-dialog /deep/.md-dialog-container {
     max-width: 768px;
   }
 .md-dialog-container {
   padding: 1em;
 }
-
 .md-dialog-container {
   transform: none !important;
   width: 700px;
 }
-
 .md-table {
   margin-top: 1em;
 }
-
 .today {
   background-color: #616161;
   border: 2px solid #448aff;
-
 }
-
+.is-today {
+  color: red !important;
+}
 .forecast {
   color: white;
+}
+.hide-notification .md-badge.md-theme-default {
+  display: none;
+}
+.remove {
+  float:right;
+  color: red;
+  font-weight: bold;
+  padding-left: .5em;
+}
+.reminder {
+  padding: 1em;
+  cursor: pointer;
 }
 
 </style>
